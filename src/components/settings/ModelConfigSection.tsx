@@ -1,0 +1,59 @@
+import { Input, Slider } from 'antd';
+import { useConfigStore } from '../../domain/config/configStore';
+
+export default function ModelConfigSection() {
+  const { model, temperature, maxContextRounds, updateConfig } = useConfigStore();
+
+  return (
+    <section className="space-y-6">
+      <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-4">模型与对话参数</h3>
+      
+      <div>
+        <label className="block text-sm text-slate-400 mb-1.5 font-medium">模型名称 <span className="text-red-400">*</span></label>
+        <Input
+          value={model}
+          onChange={(e) => updateConfig({ model: e.target.value })}
+          placeholder="例如：gpt-4o"
+          className="bg-slate-800/50 border-white/10 text-slate-200 hover:border-cyan-400/50 focus:border-cyan-400 focus:shadow-[0_0_0_2px_rgba(34,211,238,0.2)]"
+        />
+      </div>
+
+      <div>
+        <div className="flex justify-between text-sm text-slate-400 font-medium mb-1.5">
+          <label>Temperature (多样性)</label>
+          <span className="text-cyan-400">{temperature}</span>
+        </div>
+        <Slider
+          min={0}
+          max={2}
+          step={0.1}
+          value={temperature}
+          onChange={val => updateConfig({ temperature: val })}
+          className="mx-2"
+          tooltip={{ open: false }}
+        />
+        <div className="flex justify-between text-xs text-slate-500 font-light mt-1">
+          <span>0 (精确)</span>
+          <span>2 (发散)</span>
+        </div>
+      </div>
+
+      <div>
+        <div className="flex justify-between text-sm text-slate-400 font-medium mb-1.5">
+          <label>包含历史消息轮数</label>
+          <span className="text-cyan-400">{maxContextRounds}</span>
+        </div>
+        <Slider
+          min={0}
+          max={50}
+          step={1}
+          value={maxContextRounds}
+          onChange={val => updateConfig({ maxContextRounds: val })}
+          className="mx-2"
+          tooltip={{ open: false }}
+        />
+        <p className="text-xs text-slate-500 mt-1">控制送往 AI 的上下文记忆范围。越多的历史轮数会消耗更多的 Token。设置为 0 则每次为全新对话。</p>
+      </div>
+    </section>
+  );
+}

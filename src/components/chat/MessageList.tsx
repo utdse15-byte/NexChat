@@ -22,11 +22,13 @@ export default function MessageList() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto relative" ref={scrollRef}>
-      <div className="max-w-3xl mx-auto p-4 sm:p-6 pb-32">
-        {messageIds.map((id) => (
-          <MessageItem key={id} messageId={id} />
-        ))}
+    <div className="flex-1 flex flex-col overflow-hidden relative">
+      <div className="flex-1 overflow-y-auto" ref={scrollRef}>
+        <div className="max-w-3xl mx-auto p-4 sm:p-6 pb-32">
+          {messageIds.map((id) => (
+            <MessageItem key={id} messageId={id} />
+          ))}
+        </div>
       </div>
       
       {!isLocked && <ScrollToBottom onClick={scrollToBottom} />}

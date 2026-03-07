@@ -6,6 +6,7 @@ import { migrateChatData } from '../../core/storage/migration';
 import { generateId } from '../../utils/id';
 import { extractTitle } from './helpers';
 import type { ChatError } from '../../core/errors/types';
+import { chatRuntime } from '../../core/runtime/chatRuntime';
 
 interface ChatStoreState {
   sessions: Record<string, Session>;
@@ -51,20 +52,31 @@ export const useChatStore = create<ChatStore>()(
           updatedAt: now,
         };
         
-        set((state) => ({
-          sessions: { ...state.sessions, [id]: newSession },
-          sessionOrder: [id, ...state.sessionOrder],
-          activeSessionId: id,
-        }));
+        set((state) => {
+          if (state.activeSessionId) {
+            chatRuntime.abortRequest(state.activeSessionId, 'session_switch');
+          }
+          return {
+            sessions: { ...state.sessions, [id]: newSession },
+            sessionOrder: [id, ...state.sessionOrder],
+            activeSessionId: id,
+          };
+        });
         
         return id;
       },
 
       switchSession: (id) => {
-        set({ activeSessionId: id });
+        set((state) => {
+          if (state.activeSessionId && state.activeSessionId !== id) {
+            chatRuntime.abortRequest(state.activeSessionId, 'session_switch');
+          }
+          return { activeSessionId: id };
+        });
       },
 
       deleteSession: (id) => {
+        chatRuntime.abortRequest(id, 'session_deleted');
         set((state) => {
           const newSessions = { ...state.sessions };
           const sessionToDelete = newSessions[id];
@@ -239,6 +251,7 @@ export const useChatStore = create<ChatStore>()(
       },
 
       clearAllData: () => {
+        chatRuntime.abortAllRequests('session_deleted');
         set({
           sessions: {},
           messages: {},

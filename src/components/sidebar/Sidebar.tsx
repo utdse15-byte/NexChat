@@ -1,12 +1,15 @@
-import { Drawer } from 'antd';
+import { Drawer, Button } from 'antd';
+import { SettingOutlined } from '@ant-design/icons';
 import { useEffect, useState, useMemo } from 'react';
 import { useChatStore } from '../../domain/chat/chatStore';
+import { useUIStore } from '../../domain/ui/uiStore';
 import { groupSessionsByTime } from '../../utils/time';
 import SessionGroup from './SessionGroup';
 import NewChatButton from './NewChatButton';
 
 export default function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const [isMobile, setIsMobile] = useState(false);
+  const setIsSettingsOpen = useUIStore(state => state.setIsSettingsOpen);
   const sessionsMap = useChatStore(state => state.sessions);
   const sessionOrder = useChatStore(state => state.sessionOrder);
 
@@ -36,6 +39,20 @@ export default function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose:
             暂无对话历史
           </div>
         )}
+      </div>
+      <div className="p-4 border-t border-white/10 mt-auto shrink-0">
+        <Button 
+          type="text" 
+          block 
+          icon={<SettingOutlined />} 
+          className="text-slate-400 hover:text-cyan-400 hover:bg-slate-800 flex items-center justify-start h-10 px-3"
+          onClick={() => {
+            setIsSettingsOpen(true);
+            if (isMobile) onClose();
+          }}
+        >
+          <span className="ml-2">设置</span>
+        </Button>
       </div>
     </div>
   );

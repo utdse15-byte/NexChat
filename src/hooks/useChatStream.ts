@@ -23,12 +23,7 @@ export function useChatStream() {
     } else {
       setIsStreaming(false);
     }
-
-    return () => {
-      if (activeSessionId) {
-        chatRuntime.abortRequest(activeSessionId);
-      }
-    };
+    // 请求的生命周期现在由 chatStore 管理，组件卸载时不应中断正在生成的请求
   }, [activeSessionId]);
   
   const sendMessage = async (content: string, overrideSessionId?: string) => {
@@ -68,15 +63,27 @@ export function useChatStream() {
       createdAt: Date.now()
     });
 
-    const verifyActive = () => {
+    let isSettled = false;
+
+    const verifyActive = (isTerminal = false) => {
+      if (isSettled) return false;
+      
       const activeReq = chatRuntime.getActiveRequest(sid);
-      // Fallback: If no active request but we are checking the same assistantMessageId, it's a residual cleanup
-      if (!activeReq) return true; 
-      return activeReq && activeReq.requestId === requestId;
+      if (activeReq && activeReq.requestId !== requestId) {
+        return false;
+      }
+      
+      if (isTerminal) {
+        isSettled = true;
+      } else if (!activeReq) {
+        return false;
+      }
+      
+      return true;
     };
 
     const handleTimeout = (type: 'firstByte' | 'idle') => {
-      if (!verifyActive()) return;
+      if (!verifyActive(true)) return;
       const errorMsg = type === 'firstByte' ? '请求首字节超时' : '流数据接收超时';
       abortController.abort(new Error(errorMsg));
       setMessageError(aiMsgId, {
@@ -99,7 +106,7 @@ export function useChatStream() {
       signal: abortController.signal,
       callbacks: {
         onDelta: (delta) => {
-          if (!verifyActive()) return;
+          if (!verifyActive(false)) return;
           chatRuntime.clearFirstByteTimer(aiMsgId);
           chatRuntime.setIdleTimer(aiMsgId, streamIdleTimeout, () => handleTimeout('idle'));
           
@@ -114,7 +121,7 @@ export function useChatStream() {
           });
         },
         onDone: () => {
-          if (!verifyActive()) return;
+          if (!verifyActive(true)) return;
           const finalContent = chatRuntime.getBufferContent(aiMsgId);
           updateMessageContent(aiMsgId, finalContent);
           setMessageStatus(aiMsgId, 'done');
@@ -122,7 +129,7 @@ export function useChatStream() {
           setIsStreaming(false);
         },
         onError: (error) => {
-          if (!verifyActive()) return;
+          if (!verifyActive(true)) return;
           const finalContent = chatRuntime.getBufferContent(aiMsgId);
           updateMessageContent(aiMsgId, finalContent);
           setMessageError(aiMsgId, error);
@@ -130,10 +137,26 @@ export function useChatStream() {
           setIsStreaming(false);
         },
         onAbort: () => {
-          if (!verifyActive()) return;
+          if (!verifyActive(true)) return;
           const finalContent = chatRuntime.getBufferContent(aiMsgId);
           updateMessageContent(aiMsgId, finalContent);
-          setMessageStatus(aiMsgId, 'aborted');
+          
+          const reason = abortController.signal.reason;
+          if (reason === 'user_stop') {
+            setMessageStatus(aiMsgId, 'aborted');
+          } else if (reason === 'session_switch' || reason === 'session_deleted') {
+            // 切出会话安静中止旧流
+            setMessageStatus(aiMsgId, 'aborted');
+          } else {
+            // Unmount、网络级挂断等原生 Abort
+            setMessageStatus(aiMsgId, 'error');
+            setMessageError(aiMsgId, {
+              type: 'network_error',
+              message: '由于页面重载或组件销毁，请求被中止',
+              retryable: true
+            });
+          }
+
           chatRuntime.cleanup(sid, aiMsgId);
           setIsStreaming(false);
         }
@@ -143,7 +166,7 @@ export function useChatStream() {
 
   const stopGeneration = () => {
     if (activeSessionId) {
-      chatRuntime.abortRequest(activeSessionId);
+      chatRuntime.abortRequest(activeSessionId, 'user_stop');
       setIsStreaming(false);
     }
   };

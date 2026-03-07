@@ -6,7 +6,7 @@ export const defaultConfig: ConfigStoreState = {
   model: 'gpt-3.5-turbo',
   systemPrompt: '',
   maxContextRounds: 10,
-  temperature: 0.7,
+  temperature: 1,
   maxTokens: 0,
   firstByteTimeout: 30000,
   streamIdleTimeout: 15000,

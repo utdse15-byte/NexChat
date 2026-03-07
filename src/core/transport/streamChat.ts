@@ -29,7 +29,7 @@ export async function streamChat({
       signal,
     });
   } catch (error: any) {
-    if (error.name === 'AbortError' && !error.message?.includes('超时')) {
+    if ((error.name === 'AbortError' || signal.aborted) && !error.message?.includes('超时')) {
       callbacks.onAbort();
       return;
     }

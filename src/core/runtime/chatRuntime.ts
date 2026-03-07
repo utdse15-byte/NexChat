@@ -31,19 +31,19 @@ class ChatRuntime {
     return this.activeRequests.get(sessionId);
   }
 
-  abortRequest(sessionId: string) {
+  abortRequest(sessionId: string, reason?: any) {
     const req = this.activeRequests.get(sessionId);
     if (req) {
-      req.abortController.abort();
-      this.activeRequests.delete(sessionId);
+      req.abortController.abort(reason);
+      this.cleanup(sessionId, req.snapshot.assistantMessageId);
     }
   }
 
-  abortAllRequests() {
-    for (const req of this.activeRequests.values()) {
-      req.abortController.abort();
+  abortAllRequests(reason?: any) {
+    for (const [sessionId, req] of Array.from(this.activeRequests.entries())) {
+      req.abortController.abort(reason);
+      this.cleanup(sessionId, req.snapshot.assistantMessageId);
     }
-    this.activeRequests.clear();
   }
 
   appendBuffer(messageId: string, delta: string) {

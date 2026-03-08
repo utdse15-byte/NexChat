@@ -1,14 +1,14 @@
 import type { ChatError } from '../../core/errors/types';
 import { useChatStream } from '../../hooks/useChatStream';
-import { useConfigGuard } from '../../hooks/useConfigGuard';
+import { useUIStore } from '../../domain/ui/uiStore';
 
 export default function ErrorMessage({ error, messageId }: { error: ChatError, messageId: string }) {
   const { retryMessage } = useChatStream();
-  const { setShowConfigModal } = useConfigGuard();
+  const setIsSettingsOpen = useUIStore(state => state.setIsSettingsOpen);
 
   const handleAction = () => {
     if (error.type === 'auth_error') {
-      setShowConfigModal(true);
+      setIsSettingsOpen(true);
     } else if (error.retryable) {
       retryMessage(messageId);
     }

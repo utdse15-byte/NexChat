@@ -9,7 +9,7 @@ export default function MessageList() {
   const activeSessionId = useChatStore(state => state.activeSessionId);
   const session = useChatStore(state => activeSessionId ? state.sessions[activeSessionId] : null);
   const messageIds = session?.messageIds || [];
-  
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const { isLocked, scrollToBottom } = useAutoScroll(scrollRef);
 
@@ -30,7 +30,7 @@ export default function MessageList() {
           ))}
         </div>
       </div>
-      
+
       {!isLocked && <ScrollToBottom onClick={scrollToBottom} />}
     </div>
   );

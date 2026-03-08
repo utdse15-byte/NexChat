@@ -9,6 +9,7 @@ export const defaultConfig: ConfigStoreState = {
   maxContextRounds: 10,
   temperature: 1,
   maxTokens: 0,
+  maxContextTokens: 4000,
   firstByteTimeout: 30000,
   streamIdleTimeout: 15000,
   sendOnEnter: true,

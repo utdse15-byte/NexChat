@@ -1,49 +1,61 @@
 import type { Message } from '../../domain/chat/types';
+import { calculateMessageTokens, estimateTokens } from './tokenizer';
 
 export function buildContext(
   systemPrompt: string,
   userContent: string,
   sessionMessages: Message[],
-  maxContextRounds: number
+  maxContextRounds: number,
+  maxContextTokens: number = 4000 // Default safety limit
 ): Array<{ role: 'system' | 'user' | 'assistant', content: string }> {
   const context: Array<{ role: 'system' | 'user' | 'assistant', content: string }> = [];
   
-  if (systemPrompt.trim()) {
-    context.push({ role: 'system', content: systemPrompt.trim() });
-  }
+  // 1. Calculate fixed tokens (system prompt + current user input)
+  const systemMsg = systemPrompt.trim() ? { role: 'system' as const, content: systemPrompt.trim() } : null;
+  const currentMsg = { role: 'user' as const, content: userContent };
+  
+  let currentTokens = calculateMessageTokens([
+    ...(systemMsg ? [systemMsg] : []),
+    currentMsg
+  ]);
 
-  const validMessages = sessionMessages.filter(m => 
+  // 2. Filter valid history messages (chronological order)
+  const validHistory = sessionMessages.filter(m => 
     m.content.trim() !== '' && 
     m.status !== 'pending'
   );
 
-  const rounds: Array<Message[]> = [];
-  let currentRound: Message[] = [];
-  
-  for (const m of validMessages) {
-    if (m.role === 'user') {
-      if (currentRound.length > 0) {
-        rounds.push([...currentRound]);
-      }
-      currentRound = [m];
-    } else if (m.role === 'assistant') {
-      currentRound.push(m);
-      rounds.push([...currentRound]);
-      currentRound = [];
+  // 3. Select history messages from latest to oldest (Sliding Window)
+  const selectedHistory: Message[] = [];
+  let roundsCount = 0;
+
+  for (let i = validHistory.length - 1; i >= 0; i--) {
+    const msg = validHistory[i];
+    
+    // Check rounds limit if applicable
+    if (maxContextRounds > 0 && msg.role === 'user') {
+      if (roundsCount >= maxContextRounds) break;
+      roundsCount++;
     }
-  }
-  
-  const roundsToInclude = rounds.slice(-maxContextRounds);
-  
-  for (const round of roundsToInclude) {
-    for (const msg of round) {
-      if (msg.role === 'user' || msg.role === 'assistant') {
-        context.push({ role: msg.role, content: msg.content });
-      }
+
+    const msgTokens = estimateTokens(msg.content) + 4; // content + overhead
+    
+    if (currentTokens + msgTokens > maxContextTokens) {
+      break; // Optimization: stop if we hit the token limit
     }
+
+    currentTokens += msgTokens;
+    selectedHistory.unshift(msg);
   }
 
-  context.push({ role: 'user', content: userContent });
+  // 4. Assemble final context
+  if (systemMsg) context.push(systemMsg);
+  
+  for (const msg of selectedHistory) {
+    context.push({ role: msg.role as 'user' | 'assistant', content: msg.content });
+  }
+
+  context.push(currentMsg);
 
   return context;
 }

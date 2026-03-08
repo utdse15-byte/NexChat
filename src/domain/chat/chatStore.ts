@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { Session, Message, MessageStatus } from './types';
-import { throttledStorage } from '../../core/storage/throttledStorage';
+import { indexedDBStorage } from '../../core/storage/indexedDBStorage';
 import { migrateChatData } from '../../core/storage/migration';
 import { generateId } from '../../utils/id';
 import { extractTitle } from './helpers';
@@ -13,6 +13,7 @@ interface ChatStoreState {
   messages: Record<string, Message>;
   sessionOrder: string[];
   activeSessionId: string | null;
+  streamingContent: Record<string, string>;
 }
 
 interface ChatStoreActions {
@@ -29,6 +30,8 @@ interface ChatStoreActions {
 
   cleanupStaleStates: () => void;
   clearAllData: () => void;
+  setStreamingContent: (messageId: string, content: string) => void;
+  finalizeStreamingContent: (messageId: string) => void;
 }
 
 type ChatStore = ChatStoreState & ChatStoreActions;
@@ -40,6 +43,7 @@ export const useChatStore = create<ChatStore>()(
       messages: {},
       sessionOrder: [],
       activeSessionId: null,
+      streamingContent: {},
 
       createSession: () => {
         const id = generateId();
@@ -161,7 +165,34 @@ export const useChatStore = create<ChatStore>()(
             messages: {
               ...state.messages,
               [messageId]: { ...msg, content }
-            }
+            },
+            // Also clear from streaming content if it existed
+            streamingContent: { ...state.streamingContent, [messageId]: '' }
+          };
+        });
+      },
+
+      setStreamingContent: (messageId, content) => {
+        set((state) => ({
+          streamingContent: { ...state.streamingContent, [messageId]: content }
+        }));
+      },
+
+      finalizeStreamingContent: (messageId) => {
+        set((state) => {
+          const content = state.streamingContent[messageId];
+          const msg = state.messages[messageId];
+          if (!msg || content === undefined) return state;
+
+          const newStreamingContent = { ...state.streamingContent };
+          delete newStreamingContent[messageId];
+
+          return {
+            messages: {
+              ...state.messages,
+              [messageId]: { ...msg, content }
+            },
+            streamingContent: newStreamingContent
           };
         });
       },
@@ -263,8 +294,14 @@ export const useChatStore = create<ChatStore>()(
     {
       name: 'nexchat-data',
       version: 1,
-      storage: createJSONStorage(() => throttledStorage),
+      storage: createJSONStorage(() => indexedDBStorage),
       migrate: migrateChatData,
+      partialize: (state) => ({
+        sessions: state.sessions,
+        messages: state.messages,
+        sessionOrder: state.sessionOrder,
+        activeSessionId: state.activeSessionId,
+      }),
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.cleanupStaleStates();

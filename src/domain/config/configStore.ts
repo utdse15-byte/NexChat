@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { ConfigStoreState } from './types';
 import { defaultConfig } from './defaults';
-import { throttledStorage } from '../../core/storage/throttledStorage';
+import { indexedDBStorage } from '../../core/storage/indexedDBStorage';
 import { migrateConfigData } from '../../core/storage/migration';
 
 interface ConfigStore extends ConfigStoreState {
@@ -25,7 +25,7 @@ export const useConfigStore = create<ConfigStore>()(
     {
       name: 'nexchat-config',
       version: 2,
-      storage: createJSONStorage(() => throttledStorage),
+      storage: createJSONStorage(() => indexedDBStorage),
       migrate: migrateConfigData,
     }
   )

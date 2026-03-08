@@ -1,6 +1,6 @@
 import type { ChatError } from '../../core/errors/types';
 
-export type MessageStatus = 'pending' | 'streaming' | 'done' | 'aborted' | 'error';
+export type MessageStatus = 'pending' | 'streaming' | 'done' | 'aborted' | 'error' | 'reconnecting';
 
 export interface Message {
   id: string;

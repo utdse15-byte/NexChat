@@ -3,9 +3,12 @@ import ErrorMessage from './ErrorMessage';
 import PendingIndicator from './PendingIndicator';
 import StreamingCursor from './StreamingCursor';
 import MarkdownRenderer from './MarkdownRenderer';
+import { useChatStore } from '../../domain/chat/chatStore';
 
 export default function AssistantMessage({ message }: { message: Message }) {
-  const { status, content, error, id } = message;
+  const { status, content: persistedContent, error, id } = message;
+  const streamingContent = useChatStore(state => state.streamingContent[id]);
+  const displayContent = streamingContent || persistedContent;
 
   return (
     <div className="flex w-full justify-start mb-6">
@@ -15,9 +18,9 @@ export default function AssistantMessage({ message }: { message: Message }) {
       <div className="flex-1 min-w-0 flex flex-col items-start text-slate-100 pt-1 leading-relaxed">
         {status === 'pending' && <PendingIndicator />}
         
-        {content && (
+        {displayContent && (
           <div className="w-full relative">
-            <MarkdownRenderer content={content} />
+            <MarkdownRenderer content={displayContent} />
             {status === 'streaming' && <StreamingCursor />}
           </div>
         )}
@@ -25,6 +28,13 @@ export default function AssistantMessage({ message }: { message: Message }) {
         {status === 'aborted' && (
           <div className="mt-2 text-xs px-2 py-1 rounded border-l-2 border-amber-500 text-amber-500 bg-amber-500/10">
             已停止生成
+          </div>
+        )}
+
+        {status === 'reconnecting' && (
+          <div className="mt-2 text-xs px-2 py-1 rounded border-l-2 border-cyan-500 text-cyan-500 bg-cyan-500/10 flex items-center space-x-2">
+            <span className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span>
+            <span>网络异常，正在尝试重新连接...</span>
           </div>
         )}
 

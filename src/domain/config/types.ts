@@ -7,6 +7,7 @@ export interface ConfigStoreState {
   maxContextRounds: number;
   temperature: number;
   maxTokens: number;
+  maxContextTokens: number;
   firstByteTimeout: number;
   streamIdleTimeout: number;
   sendOnEnter: boolean;

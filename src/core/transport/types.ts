@@ -14,4 +14,5 @@ export interface StreamCallbacks {
   onDone: () => void;
   onError: (error: ChatError) => void;
   onAbort: () => void;
+  onRetry?: (attempt: number, delay: number) => void;
 }

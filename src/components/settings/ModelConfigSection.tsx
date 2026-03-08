@@ -2,7 +2,7 @@ import { Input, Slider } from 'antd';
 import { useConfigStore } from '../../domain/config/configStore';
 
 export default function ModelConfigSection() {
-  const { model, temperature, maxContextRounds, updateConfig } = useConfigStore();
+  const { model, temperature, maxContextRounds, maxContextTokens, updateConfig } = useConfigStore();
 
   return (
     <section className="space-y-6">
@@ -53,6 +53,23 @@ export default function ModelConfigSection() {
           tooltip={{ open: false }}
         />
         <p className="text-xs text-slate-500 mt-1">控制送往 AI 的上下文记忆范围。越多的历史轮数会消耗更多的 Token。设置为 0 则每次为全新对话。</p>
+      </div>
+
+      <div>
+        <div className="flex justify-between text-sm text-slate-400 font-medium mb-1.5">
+          <label>最大上下文 Token 数</label>
+          <span className="text-cyan-400">{maxContextTokens}</span>
+        </div>
+        <Slider
+          min={1000}
+          max={32000}
+          step={500}
+          value={maxContextTokens}
+          onChange={val => updateConfig({ maxContextTokens: val })}
+          className="mx-2"
+          tooltip={{ open: false }}
+        />
+        <p className="text-xs text-slate-500 mt-1">控制送往 AI 的上下文 Token 数量。超出部分将自动截断。建议根据模型窗口设置（如 GPT-3.5 设为 4000）。</p>
       </div>
     </section>
   );

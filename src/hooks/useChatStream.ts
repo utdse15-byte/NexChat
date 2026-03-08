@@ -10,7 +10,8 @@ export function useChatStream() {
   const activeSessionId = useChatStore(state => state.activeSessionId);
   const createSession = useChatStore(state => state.createSession);
   const addMessage = useChatStore(state => state.addMessage);
-  const updateMessageContent = useChatStore(state => state.updateMessageContent);
+  const setStreamingContent = useChatStore(state => state.setStreamingContent);
+  const finalizeStreamingContent = useChatStore(state => state.finalizeStreamingContent);
   const setMessageStatus = useChatStore(state => state.setMessageStatus);
   const setMessageError = useChatStore(state => state.setMessageError);
   const deleteMessage = useChatStore(state => state.deleteMessage);
@@ -37,7 +38,7 @@ export function useChatStream() {
     }
 
     const config = useConfigStore.getState();
-    const { systemPrompt, maxContextRounds, firstByteTimeout, streamIdleTimeout } = config;
+    const { systemPrompt, maxContextRounds, maxContextTokens, firstByteTimeout, streamIdleTimeout } = config;
 
     // Use done immediately as per spec "pending is for assistant before first byte"
     addMessage(sid, { role: 'user', content, status: 'done' });
@@ -48,7 +49,7 @@ export function useChatStream() {
     const sessionObj = useChatStore.getState().sessions[sid];
     const allMessages = sessionObj.messageIds.map(id => useChatStore.getState().messages[id]);
     // Skip the newly added assistant pending message for context building
-    const contextMessages = buildContext(systemPrompt, content, allMessages.slice(0, -1), maxContextRounds);
+    const contextMessages = buildContext(systemPrompt, content, allMessages.slice(0, -1), maxContextRounds, maxContextTokens);
 
     const abortController = new AbortController();
     const requestId = crypto.randomUUID();
@@ -117,29 +118,26 @@ export function useChatStream() {
 
           chatRuntime.appendBuffer(aiMsgId, delta);
           chatRuntime.scheduleFlush(aiMsgId, (bufferedContent) => {
-            updateMessageContent(aiMsgId, bufferedContent);
+            setStreamingContent(aiMsgId, bufferedContent);
           });
         },
         onDone: () => {
           if (!verifyActive(true)) return;
-          const finalContent = chatRuntime.getBufferContent(aiMsgId);
-          updateMessageContent(aiMsgId, finalContent);
+          finalizeStreamingContent(aiMsgId);
           setMessageStatus(aiMsgId, 'done');
           chatRuntime.cleanup(sid, aiMsgId);
           setIsStreaming(false);
         },
         onError: (error) => {
           if (!verifyActive(true)) return;
-          const finalContent = chatRuntime.getBufferContent(aiMsgId);
-          updateMessageContent(aiMsgId, finalContent);
+          finalizeStreamingContent(aiMsgId);
           setMessageError(aiMsgId, error);
           chatRuntime.cleanup(sid, aiMsgId);
           setIsStreaming(false);
         },
         onAbort: () => {
           if (!verifyActive(true)) return;
-          const finalContent = chatRuntime.getBufferContent(aiMsgId);
-          updateMessageContent(aiMsgId, finalContent);
+          finalizeStreamingContent(aiMsgId);
           
           const reason = abortController.signal.reason;
           if (reason === 'user_stop') {
@@ -159,6 +157,10 @@ export function useChatStream() {
 
           chatRuntime.cleanup(sid, aiMsgId);
           setIsStreaming(false);
+        },
+        onRetry: (_attempt, _delay) => {
+          if (!verifyActive(false)) return;
+          setMessageStatus(aiMsgId, 'reconnecting');
         }
       }
     });

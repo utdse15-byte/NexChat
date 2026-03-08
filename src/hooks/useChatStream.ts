@@ -97,7 +97,7 @@ export function useChatStream() {
 
     chatRuntime.setFirstByteTimer(aiMsgId, firstByteTimeout, () => handleTimeout('firstByte'));
 
-    const provider = getProvider('openai');
+    const provider = getProvider(config.provider);
 
     await streamChat({
       provider,

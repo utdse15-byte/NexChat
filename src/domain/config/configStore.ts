@@ -18,13 +18,13 @@ export const useConfigStore = create<ConfigStore>()(
       updateConfig: (partial) => set((state) => ({ ...state, ...partial })),
       resetConfig: () => set(defaultConfig),
       isConfigured: () => {
-        const { apiKey, baseUrl, model } = get();
-        return Boolean(apiKey && baseUrl && model);
+        const { provider, apiKey, baseUrl, model } = get();
+        return Boolean(provider && apiKey && baseUrl && model);
       },
     }),
     {
       name: 'nexchat-config',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => throttledStorage),
       migrate: migrateConfigData,
     }

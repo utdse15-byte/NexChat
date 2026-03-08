@@ -6,5 +6,11 @@ export function migrateChatData(persistedState: any, _version: number): any {
 }
 
 export function migrateConfigData(persistedState: any, _version: number): any {
+  if (_version === 1) {
+    return {
+      ...persistedState,
+      provider: persistedState.provider || 'openai',
+    };
+  }
   return persistedState;
 }

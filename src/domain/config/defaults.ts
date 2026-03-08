@@ -1,6 +1,7 @@
 import type { ConfigStoreState } from './types';
 
 export const defaultConfig: ConfigStoreState = {
+  provider: 'openai',
   apiKey: '',
   baseUrl: 'https://api.openai.com/v1',
   model: 'gpt-3.5-turbo',

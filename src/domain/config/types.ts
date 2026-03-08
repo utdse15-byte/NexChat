@@ -1,4 +1,5 @@
 export interface ConfigStoreState {
+  provider: string;
   apiKey: string;
   baseUrl: string;
   model: string;

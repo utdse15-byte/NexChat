@@ -1,13 +1,31 @@
-import { Input } from 'antd';
+import { Input, Select } from 'antd';
 import { useConfigStore } from '../../domain/config/configStore';
 import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
+import { providers } from '../../core/providers';
 
 export default function ApiConfigSection() {
-  const { apiKey, baseUrl, updateConfig } = useConfigStore();
+  const { provider, apiKey, baseUrl, updateConfig } = useConfigStore();
+
+  const providerOptions = Object.keys(providers).map(key => ({
+    value: key,
+    label: providers[key].name || key
+  }));
 
   return (
     <section className="space-y-4">
       <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-4">API 配置</h3>
+
+      <div>
+        <label className="block text-sm text-slate-400 mb-1.5 font-medium">服务供应商 <span className="text-red-400">*</span></label>
+        <Select
+          value={provider}
+          onChange={(val) => updateConfig({ provider: val })}
+          options={providerOptions}
+          className="w-full h-9"
+          dropdownStyle={{ backgroundColor: '#1e293b' }}
+           popupClassName="dark-select-popup"
+        />
+      </div>
       
       <div>
         <label className="block text-sm text-slate-400 mb-1.5 font-medium">API Key <span className="text-red-400">*</span></label>

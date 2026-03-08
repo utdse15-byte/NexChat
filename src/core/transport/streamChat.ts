@@ -66,6 +66,7 @@ export async function streamChat({
   const decoder = new TextDecoder('utf-8');
   const sseParser = createSSEParser();
   let jsonErrorCount = 0;
+  let isFinished = false;
 
   try {
     while (true) {
@@ -83,6 +84,7 @@ export async function streamChat({
         const dataStr = dataLines.join('\n');
         
         if (dataStr === '[DONE]') {
+          isFinished = true;
           callbacks.onDone();
           return;
         }
@@ -92,6 +94,7 @@ export async function streamChat({
           jsonErrorCount = 0; // reset on success
 
           if (provider.isStreamDone(parsed)) {
+            isFinished = true;
             callbacks.onDone();
             return;
           }
@@ -108,6 +111,11 @@ export async function streamChat({
         }
       }
     }
+
+    if (!isFinished) {
+      throw new Error('数据流异常中断，未收到结束标识');
+    }
+    
     callbacks.onDone();
   } catch (error: any) {
     if ((signal.aborted || error.name === 'AbortError') && !error.message?.includes('超时')) {

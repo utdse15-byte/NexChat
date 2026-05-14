@@ -9,12 +9,10 @@ export function estimateTokens(text: string): number {
   if (!text) return 0;
   
   try {
-    // encode returns an array of token IDs
+    // encode 返回 token id 数组
     return encode(text).length;
-  } catch (e) {
-    // Fallback heuristic: 
-    // - English: ~4 characters per token
-    // - CJK: ~1 character per token
+  } catch {
+    // 兜底启发式：英文 ~4 字符/token，CJK ~1 字符/token
     const cjkRegex = /[\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af]/g;
     const cjkCount = (text.match(cjkRegex) || []).length;
     const otherCount = text.length - cjkCount;

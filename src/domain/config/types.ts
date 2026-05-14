@@ -12,4 +12,8 @@ export interface ConfigStoreState {
   streamIdleTimeout: number;
   sendOnEnter: boolean;
   rememberConfig: boolean;
+  /** 是否启用后端模式（通过 FastAPI 代理而非直连 LLM API） */
+  backendEnabled: boolean;
+  /** 后端 API 地址 */
+  backendUrl: string;
 }

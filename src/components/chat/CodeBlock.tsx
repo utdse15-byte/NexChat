@@ -39,7 +39,7 @@ export default function CodeBlock({ language, value }: CodeBlockProps) {
       <div className="p-0 text-sm overflow-x-auto custom-scrollbar">
         <SyntaxHighlighter
           language={language || 'text'}
-          style={vscDarkPlus as any}
+          style={vscDarkPlus}
           customStyle={{ margin: 0, padding: '1rem', background: 'transparent' }}
           wrapLines={true}
         >

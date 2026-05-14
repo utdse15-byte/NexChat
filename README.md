@@ -1,37 +1,69 @@
 # NexChat
 
-NexChat is a production-ready Web AI Chat application built with React 19, Vite, and Tailwind CSS v4. It runs entirely on the frontend, persisting state locally without relying on any self-hosted backends, directly connecting to OpenAI-compatible APIs.
+NexChat is a full-stack AI Chat application featuring **RAG knowledge base** and **multi-Agent orchestration**. The frontend is built with React 19 + Vite + TailwindCSS, and the backend is powered by Python FastAPI + LangChain + ChromaDB.
 
 ## Key Features
 
-- **Local First & Privacy**: No data leaves your browser except what goes to the standard AI endpoint you provide.
-- **Pure Front-End**: Easily deploy anywhere (Vercel, Netlify, Github Pages).
-- **Smooth Streaming**: Handcrafted SSE parser and robust React queuing system for rapid typography-like streaming with optimal performance.
-- **Robust State Management**: Built tightly with Zustand, including deep migration, persisted quotas, throttling, and session caching.
-- **Rich Experience**:
-  - Context-aware Markdown and code highlighting.
-  - "New chat" vs. historic sessions.
-  - Auto-scroll lock mechanisms and error partial-recoveries.
-  - Adaptive layout built for mobile PWA usage (`100dvh`, Drawer modes).
+- **Dual Mode**: Pure frontend (direct API) or full-stack backend mode with enhanced AI capabilities.
+- **RAG Knowledge Base**: Upload documents (TXT/MD/PDF) → vector indexing → semantic retrieval → context-augmented generation.
+- **Multi-Agent Architecture**: Router Agent automatically dispatches to Chat / RAG / Summary agents based on user intent.
+- **Streaming Chat**: SSE-based real-time streaming with retry, timeout handling, and abort support.
+- **Local First & Privacy**: Frontend mode stores everything in browser; backend mode uses SQLite + ChromaDB.
+- **Docker Ready**: One-command deployment with `docker-compose up`.
+
+## Tech Stack
+
+| Layer | Technologies |
+|-------|-------------|
+| Frontend | React 19, TypeScript, Vite, TailwindCSS v4, Zustand, Ant Design |
+| Backend | Python, FastAPI, SQLAlchemy, SQLite |
+| AI/RAG | LangChain, ChromaDB, OpenAI API |
+| DevOps | Docker, Docker Compose, Nginx |
 
 ## Quick Start
 
+### Frontend Only (Original Mode)
+
 ```bash
-# Install dependencies
 npm install
-
-# Start local server
 npm run dev
-
-# Build for production
-npm run build
 ```
 
-## Setup Configuration
-Upon first load, NexChat will ask for an API Key, Base URL, and Model. Ensure that your Base URL connects to an OpenAI compatible endpoint (e.g. `https://api.openai.com/v1`).
+### Full-Stack Mode (Frontend + Backend)
 
-## System Architecture
+```bash
+# 1. Setup backend
+cd server
+cp .env.example .env    # Edit .env with your API key
+pip install -r requirements.txt
+python main.py          # Starts on http://localhost:8000
 
-- `src/domain`: Business models and Zustand Stores (`configStore`, `chatStore`, `uiStore`). Handles multi-session logic.
-- `src/core`: Heavy-lifting networking (`streamChat`, `sseParser`, `classifyError`) and Throttled Storage logic.
-- `src/components`: UI Views utilizing Ant Design and Tailwind CSS.
+# 2. Start frontend (in project root)
+npm run dev             # Vite proxies /api to backend
+```
+
+### Docker Compose
+
+```bash
+cp server/.env.example server/.env  # Edit with your API key
+docker-compose up --build
+# Frontend: http://localhost:3000
+# Backend:  http://localhost:8000
+```
+
+## Architecture
+
+```
+src/                          # React Frontend
+├── components/               #   UI Components (Chat, Settings, Knowledge, Sidebar)
+├── core/                     #   Transport (SSE), Providers (OpenAI/Backend), Context
+├── domain/                   #   Zustand Stores (Chat, Config, UI)
+└── hooks/                    #   useChatStream, useAutoScroll
+
+server/                       # Python Backend (FastAPI)
+├── agents/                   #   Router, Chat, RAG, Summary Agents
+├── rag/                      #   Document Loader, Text Splitter, Vector Store, Retriever
+├── database/                 #   SQLAlchemy Models + SQLite
+├── routers/                  #   API Routes (Chat, Knowledge, Sessions)
+└── services/                 #   Business Logic Layer
+```

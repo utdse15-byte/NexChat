@@ -8,10 +8,12 @@ export const defaultConfig: ConfigStoreState = {
   systemPrompt: '',
   maxContextRounds: 10,
   temperature: 1,
-  maxTokens: 0,
+  maxTokens: 4096,
   maxContextTokens: 4000,
   firstByteTimeout: 30000,
   streamIdleTimeout: 15000,
   sendOnEnter: true,
   rememberConfig: true,
+  backendEnabled: false,
+  backendUrl: '/api',
 };

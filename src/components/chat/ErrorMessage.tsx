@@ -26,12 +26,14 @@ export default function ErrorMessage({ error, messageId }: { error: ChatError, m
         {error.type === 'unknown_error' && '发生了未知错误'}
       </div>
       <div className="text-red-200/80 mb-2 break-all">{error.message}</div>
-      <button 
-        onClick={handleAction}
-        className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded transition-colors cursor-pointer"
-      >
-        {error.type === 'auth_error' ? '前往设置' : '重试'}
-      </button>
+      {(error.type === 'auth_error' || error.retryable) && (
+        <button 
+          onClick={handleAction}
+          className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded transition-colors cursor-pointer"
+        >
+          {error.type === 'auth_error' ? '前往设置' : '重试'}
+        </button>
+      )}
     </div>
   );
 }

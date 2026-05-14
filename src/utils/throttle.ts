@@ -1,14 +1,14 @@
-export function throttle<T extends (...args: any[]) => any>(
-  func: T,
+export function throttle<TArgs extends unknown[], TReturn>(
+  func: (...args: TArgs) => TReturn,
   wait: number
-): (...args: Parameters<T>) => void {
+): (...args: TArgs) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null;
   let previous = 0;
 
-  return function (...args: Parameters<T>) {
+  return function (...args: TArgs) {
     const now = Date.now();
     const remaining = wait - (now - previous);
-    
+
     if (remaining <= 0 || remaining > wait) {
       if (timeout) {
         clearTimeout(timeout);

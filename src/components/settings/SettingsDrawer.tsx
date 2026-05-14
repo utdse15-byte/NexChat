@@ -1,6 +1,7 @@
 import { Drawer } from 'antd';
 import ApiConfigSection from './ApiConfigSection';
 import ModelConfigSection from './ModelConfigSection';
+import BackendConfigSection from './BackendConfigSection';
 import DangerZone from './DangerZone';
 
 export default function SettingsDrawer({ open, onClose }: { open: boolean, onClose: () => void }) {
@@ -24,8 +25,11 @@ export default function SettingsDrawer({ open, onClose }: { open: boolean, onClo
         <div className="h-px bg-white/5 w-full"></div>
         <ModelConfigSection />
         <div className="h-px bg-white/5 w-full"></div>
+        <BackendConfigSection />
+        <div className="h-px bg-white/5 w-full"></div>
         <DangerZone />
       </div>
     </Drawer>
   );
 }
+

@@ -1,9 +1,11 @@
+import type { ConfigStoreState } from '../../domain/config/types';
+
 export interface RequestSnapshot {
   requestId: string;
   sessionId: string;
   assistantMessageId: string;
   userMessageContent: string;
-  config: any;
+  config: ConfigStoreState;
   contextMessages: Array<{ role: string; content: string }>;
   createdAt: number;
 }
@@ -14,6 +16,8 @@ export interface ActiveRequest {
   snapshot: RequestSnapshot;
 }
 
+type Subscriber = () => void;
+
 class ChatRuntime {
   private activeRequests = new Map<string, ActiveRequest>();
   private streamBuffers = new Map<string, { raw: string; lastFlushedLength: number }>();
@@ -21,17 +25,36 @@ class ChatRuntime {
   private idleTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private rafHandles = new Map<string, number>();
   private programmaticScrollFlag = false;
+  private subscribers = new Set<Subscriber>();
 
-  registerRequest(sessionId: string, requestId: string, abortController: AbortController, snapshot: RequestSnapshot) {
+  /** 订阅活跃请求集变更（registerRequest / cleanup / abort 时通知） */
+  subscribe(fn: Subscriber): () => void {
+    this.subscribers.add(fn);
+    return () => {
+      this.subscribers.delete(fn);
+    };
+  }
+
+  private notify() {
+    this.subscribers.forEach((fn) => fn());
+  }
+
+  registerRequest(
+    sessionId: string,
+    requestId: string,
+    abortController: AbortController,
+    snapshot: RequestSnapshot
+  ) {
     this.activeRequests.set(sessionId, { requestId, abortController, snapshot });
     this.streamBuffers.set(snapshot.assistantMessageId, { raw: '', lastFlushedLength: 0 });
+    this.notify();
   }
 
   getActiveRequest(sessionId: string): ActiveRequest | undefined {
     return this.activeRequests.get(sessionId);
   }
 
-  abortRequest(sessionId: string, reason?: any) {
+  abortRequest(sessionId: string, reason?: unknown) {
     const req = this.activeRequests.get(sessionId);
     if (req) {
       req.abortController.abort(reason);
@@ -39,7 +62,7 @@ class ChatRuntime {
     }
   }
 
-  abortAllRequests(reason?: any) {
+  abortAllRequests(reason?: unknown) {
     for (const [sessionId, req] of Array.from(this.activeRequests.entries())) {
       req.abortController.abort(reason);
       this.cleanup(sessionId, req.snapshot.assistantMessageId);
@@ -59,7 +82,7 @@ class ChatRuntime {
 
   scheduleFlush(messageId: string, flushFn: (content: string, lastFlushed: number) => void) {
     if (this.rafHandles.has(messageId)) return;
-    
+
     const id = requestAnimationFrame(() => {
       this.rafHandles.delete(messageId);
       const buf = this.streamBuffers.get(messageId);
@@ -69,6 +92,20 @@ class ChatRuntime {
       }
     });
     this.rafHandles.set(messageId, id);
+  }
+
+  /** 强制 flush 缓冲区中所有未刷新的内容 */
+  flushBuffer(messageId: string, flushFn: (content: string) => void) {
+    const buf = this.streamBuffers.get(messageId);
+    if (buf && buf.raw.length > buf.lastFlushedLength) {
+      flushFn(buf.raw);
+      buf.lastFlushedLength = buf.raw.length;
+    }
+    const rafId = this.rafHandles.get(messageId);
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      this.rafHandles.delete(messageId);
+    }
   }
 
   clearBuffer(messageId: string) {
@@ -116,10 +153,11 @@ class ChatRuntime {
     if (rafId) cancelAnimationFrame(rafId);
     this.rafHandles.delete(messageId);
     this.clearBuffer(messageId);
-    
+
     const activeReq = this.activeRequests.get(sessionId);
     if (activeReq && activeReq.snapshot.assistantMessageId === messageId) {
       this.activeRequests.delete(sessionId);
+      this.notify();
     }
   }
 }

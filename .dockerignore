@@ -1,0 +1,10 @@
+node_modules
+dist
+.git
+*.log
+server
+server/data
+server/__pycache__
+server/.env
+**/__pycache__
+**/*.pyc

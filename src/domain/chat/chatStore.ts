@@ -13,8 +13,14 @@ interface ChatStoreState {
   messages: Record<string, Message>;
   sessionOrder: string[];
   activeSessionId: string | null;
+  /** 流式过程中临时缓存的内容；finalize 后写入 messages[id].content */
   streamingContent: Record<string, string>;
 }
+
+/** 一条消息可以增量更新的字段（除内容外的元数据） */
+type MessageMetadataPatch = Partial<
+  Pick<Message, 'agentType' | 'sources' | 'model'>
+>;
 
 interface ChatStoreActions {
   createSession: () => string;
@@ -22,10 +28,16 @@ interface ChatStoreActions {
   deleteSession: (id: string) => void;
   updateSessionTitle: (id: string, title: string) => void;
 
-  addMessage: (sessionId: string, msg: Pick<Message, 'role' | 'content' | 'status'>) => string;
+  addMessage: (
+    sessionId: string,
+    msg: Pick<Message, 'role' | 'content' | 'status'>
+  ) => string;
   updateMessageContent: (messageId: string, content: string) => void;
   setMessageStatus: (messageId: string, status: MessageStatus) => void;
   setMessageError: (messageId: string, error: ChatError) => void;
+  /** 标注非阻塞提示（如 length 截断），不改变 status */
+  setMessageWarning: (messageId: string, warning: ChatError) => void;
+  setMessageMetadata: (messageId: string, patch: MessageMetadataPatch) => void;
   deleteMessage: (messageId: string) => void;
 
   cleanupStaleStates: () => void;
@@ -55,7 +67,7 @@ export const useChatStore = create<ChatStore>()(
           createdAt: now,
           updatedAt: now,
         };
-        
+
         set((state) => {
           if (state.activeSessionId) {
             chatRuntime.abortRequest(state.activeSessionId, 'session_switch');
@@ -66,7 +78,7 @@ export const useChatStore = create<ChatStore>()(
             activeSessionId: id,
           };
         });
-        
+
         return id;
       },
 
@@ -82,18 +94,20 @@ export const useChatStore = create<ChatStore>()(
       deleteSession: (id) => {
         chatRuntime.abortRequest(id, 'session_deleted');
         set((state) => {
-          const newSessions = { ...state.sessions };
-          const sessionToDelete = newSessions[id];
+          const sessionToDelete = state.sessions[id];
           if (!sessionToDelete) return state;
 
+          const newSessions = { ...state.sessions };
           const newMessages = { ...state.messages };
-          sessionToDelete.messageIds.forEach(msgId => {
+          const newStreamingContent = { ...state.streamingContent };
+          sessionToDelete.messageIds.forEach((msgId) => {
             delete newMessages[msgId];
+            delete newStreamingContent[msgId];
           });
-
           delete newSessions[id];
-          const newOrder = state.sessionOrder.filter(sId => sId !== id);
-          
+
+          const newOrder = state.sessionOrder.filter((sId) => sId !== id);
+
           let newActive = state.activeSessionId;
           if (newActive === id) {
             newActive = newOrder.length > 0 ? newOrder[0] : null;
@@ -104,6 +118,7 @@ export const useChatStore = create<ChatStore>()(
             messages: newMessages,
             sessionOrder: newOrder,
             activeSessionId: newActive,
+            streamingContent: newStreamingContent,
           };
         });
       },
@@ -115,8 +130,8 @@ export const useChatStore = create<ChatStore>()(
           return {
             sessions: {
               ...state.sessions,
-              [id]: { ...session, title, updatedAt: Date.now() }
-            }
+              [id]: { ...session, title, updatedAt: Date.now() },
+            },
           };
         });
       },
@@ -150,7 +165,10 @@ export const useChatStore = create<ChatStore>()(
           return {
             messages: { ...state.messages, [id]: newMessage },
             sessions: { ...state.sessions, [sessionId]: updatedSession },
-            sessionOrder: [sessionId, ...state.sessionOrder.filter(sid => sid !== sessionId)]
+            sessionOrder: [
+              sessionId,
+              ...state.sessionOrder.filter((sid) => sid !== sessionId),
+            ],
           };
         });
 
@@ -161,20 +179,21 @@ export const useChatStore = create<ChatStore>()(
         set((state) => {
           const msg = state.messages[messageId];
           if (!msg) return state;
+          const newStreamingContent = { ...state.streamingContent };
+          delete newStreamingContent[messageId];
           return {
             messages: {
               ...state.messages,
-              [messageId]: { ...msg, content }
+              [messageId]: { ...msg, content },
             },
-            // Also clear from streaming content if it existed
-            streamingContent: { ...state.streamingContent, [messageId]: '' }
+            streamingContent: newStreamingContent,
           };
         });
       },
 
       setStreamingContent: (messageId, content) => {
         set((state) => ({
-          streamingContent: { ...state.streamingContent, [messageId]: content }
+          streamingContent: { ...state.streamingContent, [messageId]: content },
         }));
       },
 
@@ -190,9 +209,9 @@ export const useChatStore = create<ChatStore>()(
           return {
             messages: {
               ...state.messages,
-              [messageId]: { ...msg, content }
+              [messageId]: { ...msg, content },
             },
-            streamingContent: newStreamingContent
+            streamingContent: newStreamingContent,
           };
         });
       },
@@ -204,8 +223,8 @@ export const useChatStore = create<ChatStore>()(
           return {
             messages: {
               ...state.messages,
-              [messageId]: { ...msg, status }
-            }
+              [messageId]: { ...msg, status },
+            },
           };
         });
       },
@@ -217,8 +236,34 @@ export const useChatStore = create<ChatStore>()(
           return {
             messages: {
               ...state.messages,
-              [messageId]: { ...msg, status: 'error', error }
-            }
+              [messageId]: { ...msg, status: 'error', error },
+            },
+          };
+        });
+      },
+
+      setMessageWarning: (messageId, warning) => {
+        set((state) => {
+          const msg = state.messages[messageId];
+          if (!msg) return state;
+          return {
+            messages: {
+              ...state.messages,
+              [messageId]: { ...msg, warning },
+            },
+          };
+        });
+      },
+
+      setMessageMetadata: (messageId, patch) => {
+        set((state) => {
+          const msg = state.messages[messageId];
+          if (!msg) return state;
+          return {
+            messages: {
+              ...state.messages,
+              [messageId]: { ...msg, ...patch },
+            },
           };
         });
       },
@@ -227,26 +272,33 @@ export const useChatStore = create<ChatStore>()(
         set((state) => {
           const msg = state.messages[messageId];
           if (!msg) return state;
-          
+
           const newMessages = { ...state.messages };
           delete newMessages[messageId];
-          
+
+          let newStreamingContent = state.streamingContent;
+          if (messageId in state.streamingContent) {
+            newStreamingContent = { ...state.streamingContent };
+            delete newStreamingContent[messageId];
+          }
+
           const session = state.sessions[msg.sessionId];
           let updatedSessions = state.sessions;
-          
+
           if (session) {
             updatedSessions = {
               ...state.sessions,
               [session.id]: {
                 ...session,
-                messageIds: session.messageIds.filter(id => id !== messageId)
-              }
+                messageIds: session.messageIds.filter((id) => id !== messageId),
+              },
             };
           }
-          
+
           return {
             messages: newMessages,
-            sessions: updatedSessions
+            sessions: updatedSessions,
+            streamingContent: newStreamingContent,
           };
         });
       },
@@ -255,8 +307,8 @@ export const useChatStore = create<ChatStore>()(
         set((state) => {
           const newMessages = { ...state.messages };
           let changed = false;
-          
-          Object.values(newMessages).forEach(msg => {
+
+          Object.values(newMessages).forEach((msg) => {
             if (msg.status === 'pending') {
               newMessages[msg.id] = {
                 ...msg,
@@ -264,19 +316,19 @@ export const useChatStore = create<ChatStore>()(
                 error: {
                   type: 'network_error',
                   message: '请求因页面刷新被中断',
-                  retryable: true
-                }
+                  retryable: true,
+                },
               };
               changed = true;
-            } else if (msg.status === 'streaming') {
+            } else if (msg.status === 'streaming' || msg.status === 'reconnecting') {
               newMessages[msg.id] = {
                 ...msg,
-                status: 'aborted'
+                status: 'aborted',
               };
               changed = true;
             }
           });
-          
+
           return changed ? { messages: newMessages } : state;
         });
       },
@@ -287,9 +339,10 @@ export const useChatStore = create<ChatStore>()(
           sessions: {},
           messages: {},
           sessionOrder: [],
-          activeSessionId: null
+          activeSessionId: null,
+          streamingContent: {},
         });
-      }
+      },
     }),
     {
       name: 'nexchat-data',
@@ -306,7 +359,7 @@ export const useChatStore = create<ChatStore>()(
         if (state) {
           state.cleanupStaleStates();
         }
-      }
+      },
     }
   )
 );

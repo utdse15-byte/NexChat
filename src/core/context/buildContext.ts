@@ -20,9 +20,11 @@ export function buildContext(
   ]);
 
   // 2. Filter valid history messages (chronological order)
+  // Exclude messages that are incomplete or failed
+  const excludedStatuses = new Set(['pending', 'streaming', 'error', 'aborted', 'reconnecting']);
   const validHistory = sessionMessages.filter(m => 
     m.content.trim() !== '' && 
-    m.status !== 'pending'
+    !excludedStatuses.has(m.status)
   );
 
   // 3. Select history messages from latest to oldest (Sliding Window)

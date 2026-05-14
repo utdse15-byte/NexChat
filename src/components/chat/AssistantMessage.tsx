@@ -3,12 +3,14 @@ import ErrorMessage from './ErrorMessage';
 import PendingIndicator from './PendingIndicator';
 import StreamingCursor from './StreamingCursor';
 import MarkdownRenderer from './MarkdownRenderer';
+import AgentBadge from './AgentBadge';
+import SourcesDisplay from './SourcesDisplay';
 import { useChatStore } from '../../domain/chat/chatStore';
 
 export default function AssistantMessage({ message }: { message: Message }) {
-  const { status, content: persistedContent, error, id } = message;
+  const { status, content: persistedContent, error, warning, id, agentType, sources } = message;
   const streamingContent = useChatStore(state => state.streamingContent[id]);
-  const displayContent = streamingContent || persistedContent;
+  const displayContent = streamingContent ?? persistedContent;
 
   return (
     <div className="flex w-full justify-start mb-6">
@@ -16,6 +18,12 @@ export default function AssistantMessage({ message }: { message: Message }) {
         AI
       </div>
       <div className="flex-1 min-w-0 flex flex-col items-start text-slate-100 pt-1 leading-relaxed">
+        {agentType && (
+          <div className="mb-1.5">
+            <AgentBadge agentType={agentType} />
+          </div>
+        )}
+
         {status === 'pending' && <PendingIndicator />}
         
         {displayContent && (
@@ -41,7 +49,18 @@ export default function AssistantMessage({ message }: { message: Message }) {
         {status === 'error' && error && (
           <ErrorMessage error={error} messageId={id} />
         )}
+
+        {status === 'done' && warning && (
+          <div className="mt-2 text-xs px-2 py-1 rounded border-l-2 border-amber-500 text-amber-500 bg-amber-500/10">
+            {warning.message}
+          </div>
+        )}
+
+        {sources && sources.length > 0 && status === 'done' && (
+          <SourcesDisplay sources={sources} />
+        )}
       </div>
     </div>
   );
 }
+

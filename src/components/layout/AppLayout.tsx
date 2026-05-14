@@ -3,11 +3,13 @@ import AppHeader from './AppHeader';
 import Sidebar from '../sidebar/Sidebar';
 import ChatArea from '../chat/ChatArea';
 import SettingsDrawer from '../settings/SettingsDrawer';
+import KnowledgePanel from '../knowledge/KnowledgePanel';
 import { useUIStore } from '../../domain/ui/uiStore';
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { isSettingsOpen, setIsSettingsOpen } = useUIStore();
+  const { isKnowledgeOpen, setIsKnowledgeOpen } = useUIStore();
 
   return (
     <div className="flex h-dvh w-full overflow-hidden bg-slate-950 text-slate-50 font-sans selection:bg-cyan-500/30">
@@ -19,6 +21,8 @@ export default function AppLayout() {
       </div>
 
       <SettingsDrawer open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <KnowledgePanel open={isKnowledgeOpen} onClose={() => setIsKnowledgeOpen(false)} />
     </div>
   );
 }
+

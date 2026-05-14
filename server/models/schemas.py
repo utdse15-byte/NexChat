@@ -43,7 +43,8 @@ class ChatRequest(BaseModel):
     """前端发起聊天请求"""
     session_id: str | None = None
     messages: list[dict] = Field(default_factory=list)
-    model: str = ""
+    # model 可省略：留空时后端使用 .env 中 CHAT_MODEL 配置
+    model: str | None = None
     temperature: float = 1.0
     max_tokens: int = 4096
     stream: bool = True

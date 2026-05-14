@@ -3,20 +3,9 @@
 #
 # 使用方式：
 #   1. 复制 server/.env.example 为 server/.env，填入 API Key
-#   2. docker-compose up --build
+#   2. docker-compose up --build -d
 
 services:
-  # 前端 (Nginx)
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    restart: unless-stopped
-
   # 后端 (FastAPI)
   backend:
     build:
@@ -28,6 +17,26 @@ services:
       - nexchat_data:/app/data
     env_file:
       - ./server/.env
+    healthcheck:
+      # 用 Python 内置 urllib 做健康检查，避免依赖容器内是否有 curl
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/api/health',timeout=3).status==200 else sys.exit(1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  # 前端 (Nginx)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        # 等后端 healthcheck 通过再启动 nginx，避免启动期 DNS 解析失败
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

@@ -41,11 +41,17 @@ export const backendProvider: Provider = {
 
     const body: Record<string, unknown> = {
       messages: contextMessages,
-      model: config.model,
       temperature: config.temperature,
       max_tokens: config.maxTokens,
       stream: true,
     };
+
+    // 后端模式下 model 是可选的：留空时使用后端 .env 中的 CHAT_MODEL，
+    // 避免前端默认值（如 "gpt-3.5-turbo"）覆盖管理员在后端配置的模型。
+    const trimmedModel = (config.model || '').trim();
+    if (trimmedModel) {
+      body.model = trimmedModel;
+    }
 
     if (extras?.sessionId) {
       body.session_id = extras.sessionId;

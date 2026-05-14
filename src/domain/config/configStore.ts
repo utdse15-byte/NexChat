@@ -20,7 +20,9 @@ export const useConfigStore = create<ConfigStore>()(
       isConfigured: () => {
         const state = get();
         if (state.backendEnabled) {
-          return Boolean(state.model && state.backendUrl);
+          // 后端模式下 model 可留空（由后端 .env 中 CHAT_MODEL 决定），
+          // 仅 backendUrl 为必填
+          return Boolean(state.backendUrl);
         }
         return Boolean(state.provider && state.apiKey && state.baseUrl && state.model);
       },

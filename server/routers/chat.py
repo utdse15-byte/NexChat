@@ -37,11 +37,15 @@ async def chat_stream(request: ChatRequest, db: Session = Depends(get_db)):
 
     async def event_generator():
         try:
+            # 前端可能传 None / "" / 纯空白；任意一种都视为不指定，
+            # 让后端 agent 走 settings.chat_model（即 .env 配置）
+            requested_model = (request.model or "").strip() or None
+
             async for event in handle_chat_stream(
                 db=db,
                 session_id=request.session_id,
                 messages=request.messages,
-                model=request.model or None,
+                model=requested_model,
                 temperature=request.temperature,
                 max_tokens=request.max_tokens,
             ):

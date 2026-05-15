@@ -13,9 +13,13 @@ export default function ApiConfigSection() {
 
   return (
     <section className="space-y-4">
-      <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-4">API 配置</h3>
+      <h3 className="text-sm font-semibold text-cyan-400 uppercase tracking-wider mb-4">
+        {backendEnabled ? '后端 API 配置' : '直连 API 配置'}
+      </h3>
 
-      <div>
+      {!backendEnabled && (
+        <>
+          <div>
         <label className="block text-sm text-slate-400 mb-1.5 font-medium">服务供应商 <span className="text-red-400">*</span></label>
         <Select
           value={provider}
@@ -48,7 +52,9 @@ export default function ApiConfigSection() {
           className="bg-slate-800/50 border-white/10 text-slate-200 hover:border-cyan-400/50 focus:border-cyan-400 focus:shadow-[0_0_0_2px_rgba(34,211,238,0.2)]"
         />
         <p className="text-xs text-slate-500 mt-1.5">支持任何兼容 OpenAI 格式的 API。对于某些中转 API，请务必包含 /v1 后缀。</p>
-      </div>
+          </div>
+        </>
+      )}
 
       {backendEnabled && (
         <div>

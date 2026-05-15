@@ -26,7 +26,7 @@ export const defaultConfig: ConfigStoreState = {
   provider: 'openai',
   apiKey: '',
   baseUrl: 'https://api.openai.com/v1',
-  model: 'gpt-3.5-turbo',
+  model: HAS_BUILTIN_BACKEND ? '' : 'gpt-3.5-turbo',
   systemPrompt: '',
   maxContextRounds: 10,
   temperature: 1,

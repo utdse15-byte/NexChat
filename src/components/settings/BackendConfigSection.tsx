@@ -25,7 +25,10 @@ export default function BackendConfigSection() {
         </div>
         <Switch
           checked={backendEnabled}
-          onChange={(checked) => updateConfig({ backendEnabled: checked })}
+          onChange={(checked) => updateConfig({ 
+            backendEnabled: checked,
+            model: checked ? '' : 'gpt-3.5-turbo'
+          })}
           className={backendEnabled ? 'bg-cyan-500!' : ''}
         />
       </div>

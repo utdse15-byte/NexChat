@@ -29,6 +29,7 @@ export async function streamChat({
 }: StreamChatParams) {
   const MAX_RETRIES = 3;
   let attempt = 0;
+  let hasReceivedDelta = false;
 
   const runWithRetry = async (): Promise<void> => {
     if (signal.aborted) {
@@ -59,7 +60,7 @@ export async function streamChat({
       }
 
       const chatError = classifyFetchError(error, config.baseUrl);
-      if (chatError.retryable && attempt < MAX_RETRIES) {
+      if (chatError.retryable && attempt < MAX_RETRIES && !hasReceivedDelta) {
         return retry(chatError);
       }
 
@@ -79,7 +80,7 @@ export async function streamChat({
         retryable: true,
       }));
 
-      if (errorMsg.retryable && attempt < MAX_RETRIES) {
+      if (errorMsg.retryable && attempt < MAX_RETRIES && !hasReceivedDelta) {
         return retry(errorMsg);
       }
 
@@ -110,8 +111,9 @@ export async function streamChat({
         const chunk = decoder.decode(value, { stream: true });
         const events = sseParser.parse(chunk);
 
-        const result = processEvents(events, provider, callbacks, jsonErrorCount);
+        const result = processEvents(events, provider, callbacks, jsonErrorCount, hasReceivedDelta);
         jsonErrorCount = result.jsonErrorCount;
+        hasReceivedDelta = result.hasReceivedDelta;
         if (result.finished) return;
       }
 
@@ -119,8 +121,9 @@ export async function streamChat({
       // 通过追加分隔符触发 flush（若尾部数据本就完整则无副作用）
       if (sseParser.getRest().trim()) {
         const finalEvents = sseParser.parse('\n\n');
-        const result = processEvents(finalEvents, provider, callbacks, jsonErrorCount);
+        const result = processEvents(finalEvents, provider, callbacks, jsonErrorCount, hasReceivedDelta);
         jsonErrorCount = result.jsonErrorCount;
+        hasReceivedDelta = result.hasReceivedDelta;
         if (result.finished) return;
       }
 
@@ -142,7 +145,7 @@ export async function streamChat({
           retryable: !isProtocol,
         };
 
-        if (chatError.retryable && attempt < MAX_RETRIES) {
+        if (chatError.retryable && attempt < MAX_RETRIES && !hasReceivedDelta) {
           return retry(chatError);
         }
 
@@ -171,8 +174,9 @@ function processEvents(
   events: SSEEvent[],
   provider: Provider,
   callbacks: StreamCallbacks,
-  jsonErrorCount: number
-): { finished: boolean; jsonErrorCount: number } {
+  jsonErrorCount: number,
+  hasReceivedDelta: boolean
+): { finished: boolean; jsonErrorCount: number; hasReceivedDelta: boolean } {
   for (const event of events) {
     // 自定义事件：metadata（Agent 路由信息）
     if (event.event === 'metadata') {
@@ -201,7 +205,7 @@ function processEvents(
     // 默认 message 事件
     if (event.data === '[DONE]') {
       callbacks.onDone('stop');
-      return { finished: true, jsonErrorCount };
+      return { finished: true, jsonErrorCount, hasReceivedDelta };
     }
 
     try {
@@ -228,17 +232,18 @@ function processEvents(
           message,
           retryable: true,
         });
-        return { finished: true, jsonErrorCount };
+        return { finished: true, jsonErrorCount, hasReceivedDelta };
       }
 
       const finishReason = provider.getFinishReason(parsed);
       if (finishReason) {
         callbacks.onDone(finishReason);
-        return { finished: true, jsonErrorCount };
+        return { finished: true, jsonErrorCount, hasReceivedDelta };
       }
 
       const delta = provider.extractDelta(parsed);
       if (delta) {
+        hasReceivedDelta = true;
         callbacks.onDelta(delta);
       }
     } catch {
@@ -248,5 +253,5 @@ function processEvents(
       }
     }
   }
-  return { finished: false, jsonErrorCount };
+  return { finished: false, jsonErrorCount, hasReceivedDelta };
 }

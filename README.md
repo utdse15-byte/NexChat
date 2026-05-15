@@ -8,7 +8,7 @@ NexChat is a full-stack AI Chat application featuring **RAG knowledge base** and
 - **RAG Knowledge Base**: Upload documents (TXT/MD/PDF) → vector indexing → semantic retrieval → context-augmented generation.
 - **Multi-Agent Architecture**: Router Agent automatically dispatches to Chat / RAG / Summary agents based on user intent.
 - **Streaming Chat**: SSE-based real-time streaming with retry, timeout handling, and abort support.
-- **Local First & Privacy**: Frontend mode stores everything in browser; backend mode uses SQLite + ChromaDB.
+- **Local First & Privacy**: Chat history is primarily stored locally in the browser's IndexedDB. In backend mode, messages are also synced to the server database (SQLite) for audit and future extension purposes.
 - **Docker Ready**: One-command deployment with `docker-compose up`.
 
 ## Tech Stack

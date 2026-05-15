@@ -3,7 +3,7 @@
 文档上传、列表、删除、搜索
 """
 
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
@@ -11,12 +11,14 @@ from models.schemas import DocumentOut, KnowledgeSearchRequest, KnowledgeSearchR
 from services.knowledge_service import upload_document, list_documents, delete_document
 from rag.retriever import semantic_search
 from config import settings
+from dependencies import verify_demo_token, limiter
 
-router = APIRouter(prefix="/api/knowledge", tags=["knowledge"])
+router = APIRouter(prefix="/api/knowledge", tags=["knowledge"], dependencies=[Depends(verify_demo_token)])
 
 
 @router.post("/upload", response_model=DocumentOut)
-async def upload(file: UploadFile = File(...), db: Session = Depends(get_db)):
+@limiter.limit("10/hour")
+async def upload(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
     """上传文档到知识库"""
     if not file.filename:
         raise HTTPException(status_code=400, detail="文件名不能为空")
@@ -74,7 +76,8 @@ def remove_document(doc_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/search", response_model=list[KnowledgeSearchResult])
-def search_knowledge(request: KnowledgeSearchRequest):
+@limiter.limit("60/minute")
+def search_knowledge(req: Request, request: KnowledgeSearchRequest):
     """语义搜索知识库"""
     results = semantic_search(request.query, top_k=request.top_k)
     return [

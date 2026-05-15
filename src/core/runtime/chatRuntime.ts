@@ -56,16 +56,16 @@ class ChatRuntime {
 
   abortRequest(sessionId: string, reason?: unknown) {
     const req = this.activeRequests.get(sessionId);
-    if (req) {
+    if (req && !req.abortController.signal.aborted) {
       req.abortController.abort(reason);
-      this.cleanup(sessionId, req.snapshot.assistantMessageId);
     }
   }
 
   abortAllRequests(reason?: unknown) {
-    for (const [sessionId, req] of Array.from(this.activeRequests.entries())) {
-      req.abortController.abort(reason);
-      this.cleanup(sessionId, req.snapshot.assistantMessageId);
+    for (const [, req] of Array.from(this.activeRequests.entries())) {
+      if (!req.abortController.signal.aborted) {
+        req.abortController.abort(reason);
+      }
     }
   }
 

@@ -38,6 +38,7 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://localhost:3000",
     ]
+    demo_token: str | None = None
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

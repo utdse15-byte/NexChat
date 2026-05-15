@@ -4,13 +4,14 @@
 """
 
 import json
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from database.connection import get_db
 from models.schemas import ChatRequest
 from services.chat_service import handle_chat_stream
+from dependencies import verify_demo_token, limiter
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -22,8 +23,9 @@ def _format_sse(event: dict) -> str:
     return f"data: {event['data']}\n\n"
 
 
-@router.post("/stream")
-async def chat_stream(request: ChatRequest, db: Session = Depends(get_db)):
+@router.post("/stream", dependencies=[Depends(verify_demo_token)])
+@limiter.limit("10/minute")
+async def chat_stream(request: Request, body: ChatRequest, db: Session = Depends(get_db)):
     """
     SSE 流式聊天接口
 
@@ -39,15 +41,15 @@ async def chat_stream(request: ChatRequest, db: Session = Depends(get_db)):
         try:
             # 前端可能传 None / "" / 纯空白；任意一种都视为不指定，
             # 让后端 agent 走 settings.chat_model（即 .env 配置）
-            requested_model = (request.model or "").strip() or None
+            requested_model = (body.model or "").strip() or None
 
             async for event in handle_chat_stream(
                 db=db,
-                session_id=request.session_id,
-                messages=request.messages,
+                session_id=body.session_id,
+                messages=[msg.model_dump() for msg in body.messages],
                 model=requested_model,
-                temperature=request.temperature,
-                max_tokens=request.max_tokens,
+                temperature=body.temperature,
+                max_tokens=body.max_tokens,
             ):
                 yield _format_sse(event)
         except Exception as e:

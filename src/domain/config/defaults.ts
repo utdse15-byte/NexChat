@@ -34,8 +34,6 @@ export const defaultConfig: ConfigStoreState = {
   maxContextTokens: 4000,
   firstByteTimeout: 60000,
   streamIdleTimeout: 60000,
-  sendOnEnter: true,
-  rememberConfig: true,
   backendEnabled: HAS_BUILTIN_BACKEND,
   backendUrl: DEFAULT_BACKEND_URL,
 };

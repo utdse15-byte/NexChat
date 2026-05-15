@@ -176,7 +176,7 @@ async def handle_chat_stream(
                 yield _wrap_delta(chunk)
 
         elif agent_type == "summary":
-            async for chunk in stream_summary(messages, model=model):
+            async for chunk in stream_summary(messages, model=model, max_tokens=max_tokens):
                 full_content += chunk
                 yield _wrap_delta(chunk)
 

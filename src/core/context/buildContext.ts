@@ -14,6 +14,12 @@ export function buildContext(
   const systemMsg = systemPrompt.trim() ? { role: 'system' as const, content: systemPrompt.trim() } : null;
   const currentMsg = { role: 'user' as const, content: userContent };
   
+  if (maxContextRounds <= 0) {
+    if (systemMsg) context.push(systemMsg);
+    context.push(currentMsg);
+    return context;
+  }
+
   let currentTokens = calculateMessageTokens([
     ...(systemMsg ? [systemMsg] : []),
     currentMsg

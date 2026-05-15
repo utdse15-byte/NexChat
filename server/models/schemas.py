@@ -37,16 +37,22 @@ class MessageOut(BaseModel):
     created_at: float
 
 
+from typing import Literal
+
 # ── 聊天 ─────────────────────────────────────────────────
+
+class ChatMessage(BaseModel):
+    role: Literal["system", "user", "assistant"]
+    content: str = Field(min_length=1, max_length=20000)
 
 class ChatRequest(BaseModel):
     """前端发起聊天请求"""
     session_id: str | None = None
-    messages: list[dict] = Field(default_factory=list)
+    messages: list[ChatMessage] = Field(default_factory=list, max_length=100)
     # model 可省略：留空时后端使用 .env 中 CHAT_MODEL 配置
     model: str | None = None
-    temperature: float = 1.0
-    max_tokens: int = 4096
+    temperature: float = Field(1.0, ge=0, le=2)
+    max_tokens: int = Field(4096, ge=1, le=32768)
     stream: bool = True
 
 
@@ -63,8 +69,8 @@ class DocumentOut(BaseModel):
 
 
 class KnowledgeSearchRequest(BaseModel):
-    query: str
-    top_k: int = 5
+    query: str = Field(min_length=1, max_length=2000)
+    top_k: int = Field(5, ge=1, le=20)
 
 
 class KnowledgeSearchResult(BaseModel):

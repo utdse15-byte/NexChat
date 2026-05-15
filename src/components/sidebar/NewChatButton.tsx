@@ -1,15 +1,10 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { useChatStore } from '../../domain/chat/chatStore';
-import { chatRuntime } from '../../core/runtime/chatRuntime';
 
 export default function NewChatButton({ onClick }: { onClick?: () => void }) {
   const createSession = useChatStore(state => state.createSession);
-  const activeSessionId = useChatStore(state => state.activeSessionId);
 
   const handleNewChat = () => {
-    if (activeSessionId) {
-      chatRuntime.abortRequest(activeSessionId);
-    }
     createSession();
     if (onClick) onClick();
   };

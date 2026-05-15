@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { clear } from 'idb-keyval';
 
 interface Props {
   children: ReactNode;
@@ -43,13 +44,14 @@ export default class AppErrorBoundary extends Component<Props, State> {
                 刷新页面
               </button>
               <button 
-                onClick={() => {
+                onClick={async () => {
                   localStorage.clear();
+                  await clear();
                   window.location.reload();
                 }}
                 className="w-full py-2 bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-slate-300 rounded-lg transition-colors cursor-pointer text-sm"
               >
-                清除缓并重置所有数据
+                清除缓存并重置所有数据
               </button>
             </div>
             <div className="mt-4 p-2 bg-black/30 rounded text-xs text-red-300 text-left overflow-auto max-h-32">

@@ -14,7 +14,7 @@ services:
     dockerfilePath: ./server/Dockerfile
     dockerContext: ./server
     plan: free                       # 免费档：750h/月，15min 无活动 spin down
-    region: singapore                # 离亚洲用户最近；可改 oregon / frankfurt
+    region: oregon                   # 离亚洲用户最近；可改 oregon / frankfurt
     healthCheckPath: /api/health
     autoDeploy: true                 # 推 main 自动部署
     envVars:

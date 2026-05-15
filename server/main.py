@@ -15,11 +15,21 @@ from routers import chat, knowledge, sessions
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期管理：启动时初始化数据库"""
+    """应用生命周期管理：启动时初始化数据库 + 输出关键配置"""
     init_db()
     print("✅ 数据库已初始化")
     print(f"📂 ChromaDB 存储: {settings.chroma_persist_dir}")
     print(f"📂 文件上传目录: {settings.upload_dir}")
+    # 输出关键 LLM 配置（不打印 API Key）便于排查 misconfig
+    masked_key = (
+        f"{settings.openai_api_key[:6]}...({len(settings.openai_api_key)})"
+        if settings.openai_api_key else "<not set>"
+    )
+    print(f"🤖 Chat Model:   {settings.chat_model}")
+    print(f"🤖 Embedding:    {settings.embedding_model}")
+    print(f"🌐 Base URL:     {settings.openai_base_url}")
+    print(f"🔑 API Key:      {masked_key}")
+    print(f"🌍 CORS Origins: {settings.cors_origins}")
     yield
 
 

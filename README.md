@@ -20,7 +20,17 @@ NexChat is a full-stack AI Chat application featuring **RAG knowledge base** and
 | AI/RAG | LangChain, ChromaDB, OpenAI API |
 | DevOps | Docker, Docker Compose, Nginx |
 
-## Quick Start
+## Cloud Deployment
+
+NexChat is designed to deploy to a **frontend-on-Vercel + backend-on-Render** combo:
+
+- **Frontend**: Static SPA on Vercel CDN (zero-config)
+- **Backend**: FastAPI in a Docker container on Render
+- **Cross-origin** wired via build-time `VITE_DEFAULT_BACKEND_URL` and CORS allowlist
+
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for the step-by-step guide (Render Blueprint, Vercel project setup, env vars, troubleshooting).
+
+## Quick Start (Local)
 
 ### Frontend Only (Original Mode)
 

@@ -1,0 +1,58 @@
+# Render Blueprint — NexChat Backend
+# 用法：在 Render 控制台 → Blueprints → New Blueprint Instance → 选本仓库
+# Render 会读这个文件并自动创建对应服务。
+#
+# 部署完成后，Render 给你一个 URL，例如：
+#   https://nexchat-backend.onrender.com
+# 把它（追加 /api）填到 Vercel 项目的 VITE_DEFAULT_BACKEND_URL 中。
+
+services:
+  - type: web
+    name: nexchat-backend
+    runtime: docker
+    # 直接复用现有 Dockerfile，不写 dockerfilePath 时 Render 会自动找
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    plan: free                       # 免费档：750h/月，15min 无活动 spin down
+    region: singapore                # 离亚洲用户最近；可改 oregon / frankfurt
+    healthCheckPath: /api/health
+    autoDeploy: true                 # 推 main 自动部署
+    envVars:
+      # ─ LLM 配置（必填，敏感值在 Render 控制台手动填，不写在仓库）─
+      - key: OPENAI_API_KEY
+        sync: false                  # sync:false 表示需要在 Render UI 手填
+      - key: OPENAI_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai/
+      - key: CHAT_MODEL
+        value: gemini-2.5-flash-lite
+      - key: EMBEDDING_MODEL
+        value: gemini-embedding-001
+
+      # ─ 数据库与存储（免费档无持久磁盘，写到 /tmp 重启即丢，仅供 demo）─
+      - key: DATABASE_URL
+        value: sqlite:////tmp/nexchat.db
+      - key: CHROMA_PERSIST_DIR
+        value: /tmp/chroma
+      - key: UPLOAD_DIR
+        value: /tmp/uploads
+      - key: MAX_UPLOAD_SIZE
+        value: "10485760"
+
+      # ─ RAG 切块配置 ─
+      - key: CHUNK_SIZE
+        value: "500"
+      - key: CHUNK_OVERLAP
+        value: "50"
+      - key: RETRIEVAL_TOP_K
+        value: "5"
+
+      # ─ 服务监听 ─
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: "8000"
+
+      # ─ CORS：在 Render 控制台手填你的 Vercel 域名（JSON 数组格式）─
+      # 例如 ["https://your-app.vercel.app","http://localhost:5173"]
+      - key: CORS_ORIGINS
+        sync: false

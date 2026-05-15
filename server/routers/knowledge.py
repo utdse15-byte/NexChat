@@ -77,9 +77,9 @@ def remove_document(doc_id: str, db: Session = Depends(get_db)):
 
 @router.post("/search", response_model=list[KnowledgeSearchResult])
 @limiter.limit("60/minute")
-def search_knowledge(req: Request, request: KnowledgeSearchRequest):
+def search_knowledge(request: Request, body: KnowledgeSearchRequest):
     """语义搜索知识库"""
-    results = semantic_search(request.query, top_k=request.top_k)
+    results = semantic_search(body.query, top_k=body.top_k)
     return [
         KnowledgeSearchResult(
             content=r.content,

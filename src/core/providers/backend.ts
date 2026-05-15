@@ -38,6 +38,10 @@ export const backendProvider: Provider = {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
+    
+    if (config.backendToken) {
+      headers['Authorization'] = `Bearer ${config.backendToken}`;
+    }
 
     const body: Record<string, unknown> = {
       messages: contextMessages,

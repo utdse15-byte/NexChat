@@ -46,6 +46,7 @@ function formatFileSize(bytes: number): string {
 
 export default function KnowledgePanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const backendUrl = useConfigStore((s) => s.backendUrl);
+  const backendToken = useConfigStore((s) => s.backendToken);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -53,7 +54,9 @@ export default function KnowledgePanel({ open, onClose }: { open: boolean; onClo
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${backendUrl}/knowledge/documents`);
+      const headers: Record<string, string> = {};
+      if (backendToken) headers['Authorization'] = `Bearer ${backendToken}`;
+      const res = await fetch(`${backendUrl}/knowledge/documents`, { headers });
       if (res.ok) {
         setDocuments(await res.json());
       }
@@ -70,7 +73,9 @@ export default function KnowledgePanel({ open, onClose }: { open: boolean; onClo
 
   const handleDelete = async (docId: string) => {
     try {
-      const res = await fetch(`${backendUrl}/knowledge/documents/${docId}`, { method: 'DELETE' });
+      const headers: Record<string, string> = {};
+      if (backendToken) headers['Authorization'] = `Bearer ${backendToken}`;
+      const res = await fetch(`${backendUrl}/knowledge/documents/${docId}`, { method: 'DELETE', headers });
       if (res.ok) {
         message.success('文档已删除');
         setDocuments((prev) => prev.filter((d) => d.id !== docId));
@@ -85,6 +90,7 @@ export default function KnowledgePanel({ open, onClose }: { open: boolean; onClo
   const uploadProps: UploadProps = {
     name: 'file',
     action: `${backendUrl}/knowledge/upload`,
+    headers: backendToken ? { Authorization: `Bearer ${backendToken}` } : undefined,
     accept: '.txt,.md,.markdown,.pdf',
     showUploadList: false,
     beforeUpload: () => {

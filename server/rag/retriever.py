@@ -36,9 +36,9 @@ def semantic_search(query: str, top_k: int | None = None) -> list[RetrievalResul
     # score 越高表示越相关
     try:
         results = store.similarity_search_with_relevance_scores(query, k=k)
-    except Exception:
-        # 向量库为空或查询失败时返回空列表
-        return []
+    except Exception as e:
+        print(f"[RAG] semantic_search failed: {e}")
+        raise
 
     return [
         RetrievalResult(

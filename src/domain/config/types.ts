@@ -14,4 +14,6 @@ export interface ConfigStoreState {
   backendEnabled: boolean;
   /** 后端 API 地址 */
   backendUrl: string;
+  /** 后端访问密码 (DEMO_TOKEN) */
+  backendToken: string;
 }

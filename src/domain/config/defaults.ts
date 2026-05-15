@@ -36,4 +36,5 @@ export const defaultConfig: ConfigStoreState = {
   streamIdleTimeout: 60000,
   backendEnabled: HAS_BUILTIN_BACKEND,
   backendUrl: DEFAULT_BACKEND_URL,
+  backendToken: '',
 };

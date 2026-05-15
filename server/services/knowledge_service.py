@@ -115,8 +115,7 @@ def delete_document(db: Session, doc_id: str) -> bool:
     try:
         delete_by_doc_id(doc_id)
     except Exception as e:
-        print(f"Warning: Failed to delete vectors for doc_id {doc_id}: {e}")
-        # 继续执行以清理数据库和文件，防止产生脏数据
+        raise RuntimeError(f"删除向量失败，已取消删除数据库记录: {e}")
 
     # 删除磁盘文件
     try:

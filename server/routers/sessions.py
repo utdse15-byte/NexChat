@@ -13,7 +13,13 @@ from database.connection import get_db
 from database.models import SessionModel, MessageModel
 from models.schemas import SessionCreate, SessionOut, SessionUpdate, MessageOut
 
-router = APIRouter(prefix="/api/sessions", tags=["sessions"])
+from dependencies import verify_demo_token
+
+router = APIRouter(
+    prefix="/api/sessions",
+    tags=["sessions"],
+    dependencies=[Depends(verify_demo_token)]
+)
 
 
 @router.get("/", response_model=list[SessionOut])

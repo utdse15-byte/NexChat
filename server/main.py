@@ -58,7 +58,8 @@ app.add_middleware(
 # 注册路由
 app.include_router(chat.router)
 app.include_router(knowledge.router)
-app.include_router(sessions.router)
+if settings.enable_session_api:
+    app.include_router(sessions.router)
 
 
 @app.get("/api/health")

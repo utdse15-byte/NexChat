@@ -39,6 +39,7 @@ class Settings(BaseSettings):
         "http://localhost:3000",
     ]
     demo_token: str | None = None
+    enable_session_api: bool = False
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

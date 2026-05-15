@@ -34,4 +34,19 @@ describe('buildContext', () => {
     expect(context[2]).toEqual({ role: 'assistant', content: 'It is 2.' });
     expect(context[3]).toEqual({ role: 'user', content: 'Hello, AI!' });
   });
+
+  it('does not include dangling assistant message from older round', () => {
+    const systemPrompt = '';
+    const userContent = 'current';
+    const history: Message[] = [
+      { id: '1', sessionId: 's1', role: 'user', content: 'U1', status: 'done', createdAt: 0 },
+      { id: '2', sessionId: 's1', role: 'assistant', content: 'A1', status: 'done', createdAt: 1 },
+      { id: '3', sessionId: 's1', role: 'user', content: 'U2', status: 'done', createdAt: 2 },
+      { id: '4', sessionId: 's1', role: 'assistant', content: 'A2', status: 'done', createdAt: 3 },
+    ];
+
+    const context = buildContext(systemPrompt, userContent, history, 1);
+
+    expect(context.map(m => m.content)).toEqual(['U2', 'A2', 'current']);
+  });
 });

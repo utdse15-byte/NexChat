@@ -203,7 +203,7 @@ docker-compose up --build -d
    > NexChat：全栈 AI 聊天应用，前端 React 19 + Vite 部署在 Vercel CDN，
    > 后端 FastAPI + LangChain 部署在 Render Docker。实现 SSE 流式输出、
    > 多 Agent 路由（chat / RAG / summary）、ChromaDB 向量检索，前后端
-   > 通过 CORS 跨域协作，覆盖 10 项流式协议链路问题修复与 PBT 测试。
+   > 通过 CORS 跨域协作，覆盖 10 项流式协议链路问题修复与核心链路的 Vitest 单元测试。
 
 ---
 

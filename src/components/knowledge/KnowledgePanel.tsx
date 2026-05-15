@@ -59,13 +59,15 @@ export default function KnowledgePanel({ open, onClose }: { open: boolean; onClo
       const res = await fetch(`${backendUrl}/knowledge/documents`, { headers });
       if (res.ok) {
         setDocuments(await res.json());
+      } else if (res.status === 401 || res.status === 403) {
+        message.error('后端 Demo Token 缺失或错误');
       }
     } catch {
       // 后端未启动时静默失败
     } finally {
       setLoading(false);
     }
-  }, [backendUrl]);
+  }, [backendUrl, backendToken]);
 
   useEffect(() => {
     if (open) fetchDocuments();

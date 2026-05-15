@@ -52,7 +52,7 @@ export default function ApiConfigSection() {
 
       {backendEnabled && (
         <div>
-          <label className="block text-sm text-slate-400 mb-1.5 font-medium">后端 Demo Token</label>
+          <label className="block text-sm text-slate-400 mb-1.5 font-medium">后端 Demo Token（可选）</label>
           <Input.Password
             value={backendToken}
             onChange={(e) => updateConfig({ backendToken: e.target.value })}
@@ -60,7 +60,7 @@ export default function ApiConfigSection() {
             className="bg-slate-800/50 border-white/10 text-slate-200 hover:border-cyan-400/50 focus:border-cyan-400 focus:shadow-[0_0_0_2px_rgba(34,211,238,0.2)]"
             iconRender={(visible) => (visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />)}
           />
-          <p className="text-xs text-slate-500 mt-1.5">用于通过后端 /api/chat、/api/knowledge 等接口的鉴权。</p>
+          <p className="text-xs text-slate-500 mt-1.5">仅当后端配置了 DEMO_TOKEN 时需要填写，用于 /api/chat 等接口鉴权。</p>
         </div>
       )}
     </section>

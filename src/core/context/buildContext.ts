@@ -33,19 +33,25 @@ export function buildContext(
     !excludedStatuses.has(m.status)
   );
 
-  // 3. Select history messages from latest to oldest (Sliding Window)
-  const selectedHistory: Message[] = [];
-  let roundsCount = 0;
-
-  for (let i = validHistory.length - 1; i >= 0; i--) {
-    const msg = validHistory[i];
-    
-    // Check rounds limit if applicable
-    if (maxContextRounds > 0 && msg.role === 'user') {
-      if (roundsCount >= maxContextRounds) break;
-      roundsCount++;
+  // 3. Select history messages by rounds first
+  let startIndex = 0;
+  if (maxContextRounds > 0) {
+    let userRounds = 0;
+    for (let i = validHistory.length - 1; i >= 0; i--) {
+      if (validHistory[i].role === 'user') {
+        userRounds++;
+        if (userRounds === maxContextRounds) {
+          startIndex = i;
+          break;
+        }
+      }
     }
+  }
 
+  // Apply token limit from latest to oldest
+  const selectedHistory: Message[] = [];
+  for (let i = validHistory.length - 1; i >= startIndex; i--) {
+    const msg = validHistory[i];
     const msgTokens = estimateTokens(msg.content) + 4; // content + overhead
     
     if (currentTokens + msgTokens > maxContextTokens) {
@@ -54,6 +60,11 @@ export function buildContext(
 
     currentTokens += msgTokens;
     selectedHistory.unshift(msg);
+  }
+
+  // Remove dangling assistant messages from the top
+  while (selectedHistory.length > 0 && selectedHistory[0].role === 'assistant') {
+    selectedHistory.shift();
   }
 
   // 4. Assemble final context
